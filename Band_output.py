@@ -1,113 +1,156 @@
 import math
 import cmath
-import numpy as np
-import matplotlib.pyplot as plt
-#
+import numpy             as     np
+import matplotlib.pyplot as     plt
+from   infile            import c,Ntot,Gnum,Kpoints,k_choice,Nel,A,B
 
-def den_diag_out(c,Mdim2,nG,G2x,G2y):
+# Define the global prameters for these functions
+N_G        = 2*Gnum+1
+N_Gpts     = 2*N_G-1
+dk         = (2 * np.pi) / (Kpoints * c)
+G0         = (2 * np.pi) / c
+q          = np.sqrt( k_choice[0]**2 + k_choice[1]**2 ) * dk
+k          = np.zeros(Kpoints)
+G          = np.zeros(N_G)
+Gpts       = np.zeros(N_Gpts)
+for ki in range (Kpoints): k[ki]    = (ki+0.5)*dk - np.pi/c
+for Gi in range (N_G):     G[Gi]    = G0*(Gi-Gnum)
+for Gi in range (N_Gpts):  Gpts[Gi] = G0*(Gi-2*Gnum)
+
+#%%---------------------------------------------------------------------------#
 #
-#  Calculate and plot the real space density along the diagonal
-#             
-    ione = 0. + 1.j   
+#-----------------------------------------------------------------------------#
+def den_diag_out(nG):
+
+    # Calculate and plot the real space density along the diagonal
     Xpoints = 41
-    x = np.zeros(Xpoints)
+    x   = np.zeros(Xpoints)
     den = np.zeros(Xpoints)
-    dx = c/(Xpoints-1)
-    for ii in range(Xpoints):
-        xx = -c/2 + ii*dx
-        yy = xx
-        x[ii] = xx
+    dx  = c/(Xpoints-1)
     
-        dum = 0.
-        for i in range(Mdim2):
-            for j in range(Mdim2):
-                dum += nG[i,j]*cmath.exp(ione*(G2x[i]*xx+G2y[j]*yy))
-        den[ii] = dum.real
+    for xi in range(Xpoints):
+        x[xi] = -c/2 + xi*dx
+        yy = 0 # ?
+    
+        density = 0
+        for i in range(N_Gpts):
+            for j in range(N_Gpts):
+                density += nG[i,j]*cmath.exp(1j*(Gpts[i]*x[xi]+Gpts[j]*yy))
+        den[xi] = density.real
+    
+    plt.title('Electron Density along the Diagonal of the Brillouin Zone')
+    plt.xlabel('k')
+    plt.ylabel('electron density')
     plt.plot(x,den)
     plt.show()  
-#---------------------------------------------------------------------------    
-def den_full_out(c,Mdim2,nG,G2x,G2y):
-#
-#  Calculate and plot the 2D real space density
-#   
-    ione = 0. + 1.j             
+#-----------------------------------------------------------------------------#
+# 
+#-----------------------------------------------------------------------------#
+def den_full_out(nG):
+
+    # Calculate and plot the 2D real space density   
     Xpoints = 31
-    x = np.zeros(Xpoints)
+    x, y = np.zeros(Xpoints), np.zeros(Xpoints)
     den = np.zeros((Xpoints,Xpoints))
     dx = c/(Xpoints-1)
-    for ii in range(Xpoints):
-        xx = -c/2 + ii*dx
-        x[ii] = xx
-        for jj in range(Xpoints):        
-            yy = -c/2 + jj*dx
-            dum = 0.
-            for i in range(Mdim2):
-                for j in range(Mdim2):
-                    dum += nG[i,j]*cmath.exp(ione*(G2x[i]*xx+G2y[j]*yy))
-            den[ii,jj] = dum.real
-          
-    y = x.copy()
-    X,Y = np.meshgrid(x,y)
-    fig = plt.figure(figsize =(14, 9))
+    
+    for xi in range(Xpoints):
+        x[xi] = -c/2 + xi*dx
+        for yi in range(Xpoints):        
+            y[yi] = -c/2 + yi*dx
+            density = 0
+            for Gxi in range(N_Gpts):
+                for Gyi in range(N_Gpts):
+                    density += nG[Gxi,Gyi]                                         \
+                           * cmath.exp(1j*(Gpts[Gxi]*x[xi] + Gpts[Gyi]*y[yi]))
+            den[xi,yi] = density.real
+     
+    plt.title('Full Electron Density in the Brillouin Zone')
+    plt.xlabel('$k_x$')
+    plt.ylabel('$k_y$')
+    plt.zlabel('electron density')
+    
+    y    = x.copy()
+    X, Y = np.meshgrid(x,y)
+    
+    plt.figure(figsize =(14, 9))
     ax = plt.axes(projection ='3d')
     ax.plot_surface(X, Y, den)
     plt.show()    
 #---------------------------------------------------------------------------    
-def band_out(c,Mdim,Umat,G,EF):
-
+def band_out(Umat,EF):
+#
 #  Calculate band structure along Gamma --> X --> M --> Gamma in the BZ
+#
+    Kpoints_out = 200
+    dk_out = (np.pi / c) / (Kpoints_out - 1)
+    kx_out = np.zeros((3*Kpoints_out-2))
+    ky_out = np.zeros((3*Kpoints_out-2))
+    Tmat   = np.zeros((N_G**2,N_G**2), dtype=complex) 
+    EB     = np.zeros((Ntot,3*Kpoints_out-2))
 
-    Nbands = 5
-    Kpoints = 51
-    EB = np.zeros((Nbands,3*Kpoints-2))
-    dk = (math.pi/c)/(Kpoints-1)
-    kx = np.zeros((3*Kpoints-2))
-    ky = np.zeros((3*Kpoints-2))
-    Tmat = np.zeros((Mdim*Mdim,Mdim*Mdim), dtype=complex)
-    for i in range (Kpoints):
-        kx[i] = i*dk
-        ky[i] = 0.
-    for i in range (Kpoints-1):
-        kx[i+Kpoints] = math.pi/c
-        ky[i+Kpoints] = (i+1)*dk
-    for i in range (Kpoints-1):
-        kx[i+2*Kpoints-1] = math.pi/c - (i+1)*dk
-        ky[i+2*Kpoints-1] = math.pi/c - (i+1)*dk
+    
+    for i in range (Kpoints_out):
+        kx_out[i] = i*dk_out
+        ky_out[i] = 0
+    for i in range (Kpoints_out-1):
+        kx_out[i+Kpoints_out] = np.pi / c
+        ky_out[i+Kpoints_out] = (i+1)*dk_out
+    for i in range (Kpoints_out-1):
+        kx_out[i+2*Kpoints_out-1] = np.pi / c - (i+1)*dk_out
+        ky_out[i+2*Kpoints_out-1] = np.pi / c - (i+1)*dk_out
 
-    for i in range (3*Kpoints-2):   
-        for i1 in range(Mdim):
-            for i2 in range(Mdim):
-                Tmat[i2 + i1*Mdim,i2 + i1*Mdim] = \
-                    0.5*( (kx[i]-G[i1])**2 + (ky[i]-G[i2])**2 )
+    kPathLength  = 3*Kpoints_out-2
+    kPathPercent = kPathLength // 10 + 1
+    percentDone  = 0
+
+    print()
+    for i in range (3*Kpoints_out-2):
+        if   (i == 0): 
+            print("calculating band structure for",3*Kpoints_out-2,            \
+                  "k-points: [", end="")
+        elif ((i%kPathPercent) == 0):
+            percentDone += 10
+            print(str(percentDone) + "%-", end='')
+
+        for i1 in range(N_G):
+            for i2 in range(N_G):
+                Tmat[i2 + i1*N_G,i2 + i1*N_G] =                              \
+                    0.5*( (kx_out[i]-G[i1])**2 + (ky_out[i]-G[i2])**2 )
+                    
+        Hmat = Tmat + Umat
             
-        Hmat = Tmat + Umat               
-        vals, vecs = np.linalg.eigh(Hmat)  
-        for j in range(Nbands):
+        vals, vecs = np.linalg.eigh(Hmat)        
+        for j in range(Ntot):
             EB[j,i] = vals[j]
-            
+
+    print("100%]")
+
     EB = EB-EF        
     
-    plt.plot(EB[0])
-    plt.plot(EB[1])
-    plt.plot(EB[2])
-    plt.plot(EB[3])
-    plt.plot(EB[4])
-    
-    plt.xlabel("k")
-    plt.ylabel("E")
-    plt.title('$\Gamma$                         X                          M                         $\Gamma$') # lol
+    for i in range(Ntot):
+        if (i < Nel/2): 
+            plt.plot(EB[i],label=str(i+1), color='red',  linewidth=0.85)
+        else: 
+            plt.plot(EB[i],label=str(i+1), color='blue', linewidth=0.85)
+    plt.xlim([0,3*Kpoints_out-3])
+    plt.title('Electronic Band Structure for A = ' \
+              + str(A) + '\tB = ' + str(B) )
+    plt.xlabel("$\Gamma$\t\t\t\t\t X\t\t\t\t\t M\t\t\t\t\t $\Gamma$\nk")
+    plt.ylabel("E - $E_F$")
     plt.tick_params(labelbottom = False, bottom = False)
+    plt.axvline(Kpoints_out,     color='black')
+    plt.axvline(2*Kpoints_out+1, color='black')
 
-#find the minimum and maximum of each band
-
-    Emm = np.zeros((10))
-    kmm = np.zeros((10))
-    for i in range(5):
+    # find the minimum and maximum of each band
+    Emm = np.zeros((2*Ntot))
+    kmm = np.zeros((2*Ntot))
+    for i in range(int(Ntot)):
         m1 = EB[i,0]
         m2 = EB[i,0]
         km1=0
         km2=0
-        for j in range (3*Kpoints-2):
+        for j in range (3*Kpoints_out-2):
             if (EB[i,j]>m2):
                 m2=EB[i,j]
                 km2=j
@@ -119,16 +162,18 @@ def band_out(c,Mdim,Umat,G,EF):
         kmm[2*i]=km1
         kmm[2*i+1]=km2
     
-    print()    
-    print("min/max of Band 2:", Emm[2], Emm[3])
-    print("min/max of Band 3:", Emm[4], Emm[5])
-    print("min/max of Band 4:", Emm[6], Emm[7])
-    plt.plot(kmm,Emm,'o')    
-    Eout = np.zeros(2)
+    print()
+    for i in range(0,2*Ntot-1,2):
+        print("min/max of Band",((i//2)+1),":",Emm[i],Emm[i+1])
+        if (np.ceil((i/2)) == ((Nel/2)-1)): 
+            print("------------------------------------------")
+
+#    plt.plot(kmm,Emm,'o')    
+    Eout  = np.zeros(2)
     EFout = np.zeros(2)
 #    EFout[0]=EF
 #    EFout[1]=EF
     Eout[0]=0
-    Eout[1]=150
-    plt.plot(Eout,EFout,linestyle='dashed',color='black')
+    Eout[1]=3*Kpoints_out-3
+#    plt.plot(Eout,EFout,linestyle='dashed',color='black')
     plt.show()

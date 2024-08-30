@@ -1,97 +1,145 @@
 #-----------------------------------------------------------------------------#
-#-------------------PARAMETERS FOR GROUND-STATE CALCULATION-------------------#
+#---------------PARAMETERS FOR CALCULATING EPSILON(OMEGA)---------------------#
 #-----------------------------------------------------------------------------#
-c               =  5.0   # lattice constant
-A               =  0.5   # potential parameter
-B               =  0.35  # potential parameter
+PrintOut      =      1  # print outputs to the screen? still will be written
+                        # to a file.
+                        # 1 = yes
+                        # 0 = no
 
-Nel             =  4     # number of electrons per unit cell
-
-Kpoints         =  100   # number of k-points along x and y in the 1st quadrant of the BZ
-
-Ksym            =  4     # 1: only first quadrant of BZ
-                         # 2: only upper half of BZ
-                         # 3: only right half of BZ
-                         # 4: full BZ
-
-Gnum            =  3     # G-vectors along x and y: -Gnum, -Gnum+1, ..., Gnum-1, Gnum
-                         # The total number will be 2*Gnum+1 for each direction
-
-Ntot            =  15    # total number of bands that we will include 
-                         # (need more bands when calculating dielectric function)
-
-HXC             =  0     # include Hartree and LDA XC? (0=no, 1=yes)
-
-TOL             =  1.e-8 # numerical tolerance of self-consistency
-MIX             =  0.8   # mixing parameter to accelerate self-consistency
-
-GSout           =  3     # out=1: cross section of density
-                         # out=2: 2D density
-                         # out=3: band structure
-                         # out=0: no output after ground-state calculation
 #-----------------------------------------------------------------------------#
-#-----------------PARAMETERS FOR CALCULATING EPSILON(OMEGA)-------------------#
+#-----------------PARAMETERS FOR GROUND-STATE CALCULATION---------------------#
 #-----------------------------------------------------------------------------#
-eps_omega_calc  =  1     # calculate epsilon(omega)? (0=no, 1=yes)
+c             =    5.0  # lattice constant
 
-omegavalues     =  200   # number of frequency points 
-d_omega         =  0.01  # spacing of omega-grid
-eta             =  0.01  # imaginary part (line broadening parameter)
+# Direct   Gap Example: A = 2.50, B = 2.30, Nel = 8
+# Indirect Gap Example: A = 0.8,  B = 0.7,  Nel = 4
+ 
+A             =   0.80  # cosine potential parameter
+B             =   0.70  # cosine potential parameter
+D             =   0.00  # sinusoidal potential parameter (if desired)
 
-quasi2D         =  1     # 0: assume 2D Coulomb interaction 2 pi/k
-                         # 1: assume 3D Coulomb interaction 4 pi/k**2
-                     
-kval            =  0.01  # small but finite k (only needed if quasi2D = 0)
+Nel           =      4  # number of electrons per unit cell
+
+Kpoints       =     20  # number of k-points along x and y             
+
+Gnum          =      4  # G-vectors along x and y: -Gnum, -Gnum+1, ..., Gnum
+                        # The total number will be 2*Gnum+1 for each direction
+
+Ntot          =     10  # total number of bands that we will include 
+                        # (may need more when calculating dielectric function)
+
+HXC           =      0  # 0: noninteracting
+                        # 1: Hartree only
+                        # 2: Hartree + LDA exchange
+                        # 3: Hartree + LDA exchange-correlation
+
+TOL           = 1.e-12  # numerical tolerance of self-consistency
+MIX           =    0.8  # mixing parameter to accelerate self-consistency
+
+out           =      0  # out=1: cross section of density
+                        # out=2: 2D density
+                        # out=3: band structure
+                        # out=0: no output after ground-state calculation
+               
+restart       =      0  # 0: after convergence, save VH and VXC to a file
+                        # 1: read VH and VXC from file. 
+
 #-----------------------------------------------------------------------------#
-#------------------PARAMETERS FOR TIME-DEPENDENT CALCULATION------------------#
+#---------------PARAMETERS FOR CALCULATING EPSILON(OMEGA)---------------------#
 #-----------------------------------------------------------------------------#
-timeprop        =  0     # do the time propagation? (0=no, 1=yes)
+eps_omega_calc =     1  # calculate epsilon(omega)?  
+                        # 0 = no 
+                        # 1 = yes, for k=0
+                        # 2 = yes, for finite k
 
-Tsteps          =  1000  # number of time steps
-dt              =  0.5   # time step
-Ncorr           =  0     # number of corrector steps 
+k_choice       =  (1,0) # k_choice = [qx,qy]; qx and qy are (0,1,...,Kpoints).
+                        # The k-vector for which we calculate epsilon(k,omega)
+                        # has the format Kx = qx*dk and Ky = qy*dk, where
+                        # dk is the k-grid spacing (dk = PI*Kpoints/c).
 
-Perturbation    =  3     # type of external perturbation:
-                         # 0 = no perturbation
-                         # 1 = pulsed scalar potential
-                         # 2 = pulsed vector potential
-                         # 3 = suddenly switched vector potential
-                         # 4 = constant electric field
-                  
-alpha_xc        = -0.25  # LRC kernel parameter (should be <= 0)
-#               = -0.25  # Notice: if we want a finite alpha_xc, we must set 
-                         # the flag Current_mac = 1 (see below).
+om_pts         =   150  # number of frequency points 
+d_omega        =  0.01  # spacing of omega-grid
+eta            =  0.01  # imaginary part (line broadening parameter)
 
-# if Perturbation=1, we assume that the external potential parameter A
+quasi2D        =     0  # 0: assume 2D Coulomb interaction 2 pi/k
+                        # 1: assume 3D Coulomb interaction 4 pi/k**2
+
+mode           =     3  #  1: RPA
+                        #  2: LDA-XC (head-only approximation)
+                        #  3: LRC (head-only approximation)
+                        # 12: LDA-XC, full Dyson equation 
+                        # 13: LRC,    full Dyson equation
+                        # 14: LRC',   headless Dyson equation
+                        # NOTE: Dyson is only implemented for the k=0
+
+alpha_xc       = -0.00  # LRC kernel parameter (should be <= 0)
+
+#-----------------------------------------------------------------------------#
+#---------------PARAMETERS FOR TIME-DEPENDENT CALCULATION---------------------#
+#-----------------------------------------------------------------------------#
+timeprop       =     2  # Time propagation mode:
+                        # 0: no time propagation
+                        # 1: Crank-Nicolson algorithm
+                        # 2: exponential midpoint rule (recomended)
+                        # 3: ETRS 4th order (not recommended)
+
+Tsteps         =  2000  # number of time steps
+dt             =  0.25  # time step
+Ncorr          =     1  # number of corrector steps (must be >= 0)
+
+TDLRC          =     1  # use the time-dependent LRC potential? 
+                        # 0 = no
+                        # 1 = yes, head-only
+                        # 2 = yes, including local-field effects
+                        # If yes, one must set the flag Current_mac = 1
+
+CounterTerm    =     0  # include the counter term?
+                        # 0 = no
+                        # 1 = yes, head only
+                        # 2 = yes, G-dependent
+                        # 3 = yes, TD-density
+
+Proca          =     1  # include the 'Proca' terms?
+                        # 0 = no
+                        # 1 = yes, Central  Difference Method
+                        # 2 = yes, Backward Difference Method
+                        
+beta_xc        =  0.00  # 'Proca'/Damping kernel parameter (should be >= 0)
+gamma_xc       =  0.00  # 'Proca'/Damping kernel parameter (should be >= 0)
+
+Perturbation   =     3  # type of external perturbation:
+                        # 0 = no perturbation
+                        # 1 = pulsed scalar potential A(t) 
+                        # 2 = pulsed vector potential
+                        # 3 = suddenly switched vector potential 
+
+# if Perturbation = 1, we assume that the external potential parameter A
 # has a time dependence of the form A(t) = A*(1 + alpha*sin(omega_dr*t)*f(t)).
-# Here, f(t) is a square pulse envelope of duration  Ncycles*2*pi/omega_dr
+# Here, f(t) is a sine-square pulse envelope of duration  Ncycles*2*pi/omega_dr
+#
+# if Perturbation=2 or 3, we assume that we have a vector potential of strength
+# E0 along the angle theta (theta=0 along x-axis, theta=90 along y-axis etc.)
+#
+# Perturbation=2: the vector potential has the same time dependence 
+# (sine-square pulse) as the scalar potential in Perturbation=1).
+# 
+# Perturbation=3: the vector potential is suddenly switched on at time t=0.
+# This corresponds to a delta-peaked electric field pulse.
 
-omega_dr        = 0.5   # frequency with which A is driven
-alpha_t         = 0.1   # amplitude of the time-dependent potential perturbation
-Ncycles         = 3     # number of cycles
+omega_dr       =   0.5  # frequency with which A is driven
+alpha_t        = 0.010  # amplitude of time-dependent potential perturbation
+Ncycles        =     3  # number of cycles
+                        # (omega_dr,alpha_t,Ncycles not used if Perturbation=3)
 
-# if Perturbation=2, we assume that we have a vector potential of strength E0
-# along the angle theta (theta=0 along x-axis, theta=90 along y-axis etc.)
-# with the same time-dependence as above (the case where Perturbation=1).
+E0             = 0.010  # electric field amplitude
+theta          =    45  # angle of the vector potential wrt the x-axis
 
-E0              = 0.5   # electric field amplitude
-theta           = 0.0   # angle of the vector potential with respect to the x-axis
+# The following output flags are 0 = no, 1 = yes:
 
-# if Perturbation=3, we assume that we have a vector potential of strength E0
-# along the x-direction that is suddenly switched on at time t=0.
+Excited_pop    =     1  # calc & plot the excited-state population at each t
+Current_mac    =     1  # calc & plot the macro current density at each t
+Dipole         =     1  # calc & plot the time-dependent macro dipole moment
 
-# if Perturbation=4, we assume there is a constant electric fiel of strength E0.
-
-# The following output flags are 0=no, 1=yes:
-
-Excited_pop     = 0     #  calculate the excited-state population at each t
-
-Current_mac     = 0     #  calculate the macroscopic current density at each t
-
-Occ_final       = 0     #  calculate the occupation numbers at the final time
-
-Dielectric      = 0     #  calculate the time-dependent dielectric function. 
-                        #  Note: this uses the same finite value of k ("kval") 
-                        #  as the frequency-dependent dielectric function.
-                 
-Dipole          = 1     # calculate the time-dependent macroscopic dipole moment
+#*****************************************************************************#
+#***************************USER INPUT ENDS HERE******************************#
+#*****************************************************************************#
